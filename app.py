@@ -1,161 +1,149 @@
 import streamlit as st
-from datetime import date, datetime
+from datetime import datetime
 import time
-import os
 import pytz
-import json
 
 # --- CONFIGURACIÓN DE PÁGINA ---
-st.set_page_config(page_title="TOJI MODE PRO", page_icon="🦾", layout="centered")
+st.set_page_config(page_title="CLARK KENT MODE", page_icon="👓", layout="centered")
 
-# --- ESTILO VISUAL (CSS) ---
+# --- ESTILO VISUAL (CSS PERSONALIZADO) ---
 st.markdown("""
     <style>
-    .stMetric { background-color: #1e1e1e; padding: 15px; border-radius: 10px; border: 1px solid #333; }
-    .stExpander { border: 1px solid #444; border-radius: 8px; background-color: #161b22; margin-bottom: 10px; }
+    /* Cambiar el fondo general y tarjetas a tonos oscuros/azules acero */
+    .stMetric { background-color: #1e293b; padding: 15px; border-radius: 10px; border: 1px solid #334155; }
+    .stExpander { border: 1px solid #334155; border-radius: 8px; background-color: #0f172a; margin-bottom: 10px; }
+    
+    /* Botón de acción principal en Azul Metrópolis / Superman */
     div.stButton > button:first-child { 
-        background-color: #d32f2f; 
+        background-color: #1d4ed8; 
         color: white; 
         border: none; 
         font-weight: bold; 
         width: 100%; 
         height: 3em;
         font-size: 1.2em;
+        border-radius: 6px;
+        transition: background-color 0.3s;
     }
-    .stProgress > div > div > div > div { background-color: #d32f2f; }
+    div.stButton > button:first-child:hover {
+        background-color: #1e40af;
+    }
+    
+    /* Barra de progreso en rojo sutil */
+    .stProgress > div > div > div > div { background-color: #dc2626; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- PERSISTENCIA DE DATOS (RACHA) ---
-DB_FILE = "progreso_toji.json"
-
-def cargar_datos():
-    if os.path.exists(DB_FILE):
-        try:
-            with open(DB_FILE, "r") as f:
-                return json.load(f)
-        except: pass
-    return {"fecha_inicio_racha": str(date.today())}
-
-def guardar_datos(datos):
-    with open(DB_FILE, "w") as f:
-        json.dump(datos, f, indent=4)
-
-if 'datos_usuario' not in st.session_state:
-    st.session_state.datos_usuario = cargar_datos()
-
-# --- TIEMPO Y RACHA (TIJUANA) ---
+# --- TIEMPO Y NAVEGACIÓN (TIJUANA) ---
 tz = pytz.timezone('America/Tijuana') 
 hoy_tj = datetime.now(tz)
-fecha_str = hoy_tj.strftime("%Y-%m-%d")
-dias_es = {"Monday": "Lunes", "Tuesday": "Martes", "Wednesday": "Miércoles", 
-           "Thursday": "Jueves", "Friday": "Viernes", "Saturday": "Sábado", "Sunday": "Domingo"}
+dias_es = {
+    "Monday": "Lunes", "Tuesday": "Martes", "Wednesday": "Miércoles", 
+    "Thursday": "Jueves", "Friday": "Viernes", "Saturday": "Sábado", "Sunday": "Domingo"
+}
 dia_actual = dias_es.get(hoy_tj.strftime("%A"), "Lunes")
 
-fecha_inicio_obj = datetime.strptime(st.session_state.datos_usuario.get("fecha_inicio_racha", str(date.today())), "%Y-%m-%d").date()
-racha = (hoy_tj.date() - fecha_inicio_obj).days + 1
-
 # --- HEADER ---
-st.title("🔥 TOJI MODE: OVERDRIVE 🦾")
+st.title("👓 CLARK KENT MODE: PROTOCOL 🦸‍♂️")
+st.write("---")
+
 c_r1, c_r2 = st.columns(2)
 with c_r1:
-    st.metric("RACHA ACTUAL", f"{racha} DÍAS 🔥")
+    st.subheader(f"📅 Hoy es {dia_actual}")
 with c_r2:
-    st.subheader(f"📍 {dia_actual}")
-    st.caption(hoy_tj.strftime('%d/%m/%Y'))
+    st.markdown(f"<p style='text-align: right; color: #94a3b8;'>{hoy_tj.strftime('%d / %m / %Y')}</p>", unsafe_allow_html=True)
 
-# --- RUTINA ACTUALIZADA ---
+# --- BASE DE DATOS DE RUTINAS OPTIMIZADAS ---
 rutinas = {
     "Lunes": [
-        ("Press de Banca Recto", "4 × 15", 90, "Pecho"),
-        ("Press Inclinado (Pies elevados)", "4 × 15", 90, "Pecho Sup."),
-        ("Press Declinado", "4 × 15", 90, "Pecho Inf."),
-        ("Press Rotacional (Giro muñeca)", "3 × 15", 60, "Pecho Detalle"),
-        ("Rompecráneos (Barra Z)", "4 × 15", 60, "Tríceps"),
-        ("Copa de Tríceps", "3 × 15", 60, "Tríceps")
+        ("Press de Banca Plano (Barra Recta)", "3 × 6 a 8", 120, "Máxima tensión mecánica en el pecho."),
+        ("Press Inclinado (Mancuernas)", "3 × 8 a 10", 90, "Estímulo a la porción superior (clavicular)."),
+        ("Press Militar Sentado (Barra Recta)", "3 × 8 a 10", 90, "Masa general en el hombro y trapecio."),
+        ("Elevaciones Laterales (Mancuernas)", "4 × 12 to 15", 60, "Ensanchar la silueta de lado a lado.")
     ],
     "Martes": [
-        ("Remo Inclinado", "4 × 15", 90, "Espalda"),
-        ("Peso Muerto Rumano", "3 × 12", 90, "Isquios/Espalda"),
-        ("Bíceps Barra Z (Abierto)", "4 × 12", 60, "Bíceps (Cabeza corta)"),
-        ("Bíceps Barra Z (Cerrado)", "4 × 12", 60, "Bíceps (Cabeza larga)"),
-        ("Bíceps Martillo (Barra Z)", "3 × 15", 60, "Braquial"),
-        ("Elevación de Piernas", "4 × 20", 45, "Abdomen")
+        ("Remo Inclinado (Barra Recta)", "4 × 8 a 10", 90, "Trabaja romboides y trapecio medio."),
+        ("Remo a una mano (Mancuerna)", "3 × 10 (por lado)", 90, "Mayor rango de estiramiento para tus brazos largos."),
+        ("Rompecráneos (Barra Z en banco)", "3 × 10 a 12", 60, "Estimula la cabeza larga (gruesa) del tríceps."),
+        ("Curl de Bíceps (Barra Z / Agarre normal)", "3 × 10 a 12", 60, "Hipertrofia directa en la cabeza del bíceps.")
     ],
-    "Miércoles": [
-        ("Elevaciones Laterales", "5 × 20", 45, "Hombro Lateral"),
-        ("Press Militar", "4 × 12", 90, "Hombro Frontal"),
-        ("Remo al Mentón (Barra Z)", "3 × 15", 60, "Trapecio/Hombro"),
-        ("Crunch con Peso", "4 × 20", 60, "Abdomen"),
-        ("Vacío Abdominal", "4 × 30 seg", 30, "Core Interno")
-    ],
+    "Miércoles": [], # Descanso absoluto
     "Jueves": [
-        ("Hex Press", "4 × 15", 60, "Pecho (Apretando)"),
-        ("Rompecráneos", "3 × 15", 60, "Tríceps"),
-        ("Bíceps Barra Z (Lento)", "3 × 12", 60, "Bíceps Control"),
-        ("Fondos en Banco", "3 × fallo", 60, "Tríceps"),
-        ("Flexiones Diamante", "3 × fallo", 60, "Pecho/Tríceps")
+        ("Press Militar de pie (Mancuernas)", "3 × 10", 90, "Fuerza postural y estabilidad del core a tus 1.97 m."),
+        ("Flexiones en banco (Manos elevadas)", "3 × Al fallo", 60, "Estímulo de pecho bajo y bombeo de tríceps."),
+        ("Elevaciones Laterales (Mancuernas)", "4 × 12 a 15", 45, "Volumen metabólico en el deltoides lateral."),
+        ("Curl Martillo (Mancuernas)", "3 × 10 a 12", 60, "Desarrolla el braquial (ensancha el brazo de lado)."),
+        ("Copa de Tríceps (Una mancuerna pesada)", "3 × 12", 60, "Estiramiento profundo bajo carga para el tríceps.")
     ],
     "Viernes": [
-        ("Sentadilla tras nuca", "5 × 12-15", 120, "Pierna Global"),
-        ("Peso Muerto Convencional", "3 × 8 (125 lb)", 120, "Cadena Post."),
-        ("Flexiones Normales", "3 × fallo", 60, "Cierre Pecho")
+        ("Prensa de Piernas (La de tu banco)", "4 × 12 a 15", 120, "Estímulo seguro a los cuádriceps."),
+        ("Peso Muerto Rumano (Barra Recta)", "3 × 10 a 12", 90, "Fortalece femorales, glúteos y protege la zona lumbar."),
+        ("Elevación de talones (Pantorrillas de pie)", "4 × 15 a 20", 45, "Rompe la elasticidad del tendón (aguanta 1s arriba/abajo)."),
+        ("Elevación de Piernas (Acostado en banco)", "4 × 15 a 20", 60, "Hipertrofia del abdomen bajo (la 'V' del abdomen)."),
+        ("Crunch Abdominal (En el suelo)", "3 × 15 a 20", 60, "Relieve e hipertrofia en los cuadritos superiores.")
+    ],
+    "Sábado": [], # Descanso total
+    "Domingo": [
+        ("Plancha Abdominal (Plank tradicional)", "3 × 45-60 seg", 45, "Fortalece el core global en isometría."),
+        ("Plancha Lateral (Side Plank)", "3 × 30 seg (por lado)", 30, "Activa oblicuos y da soporte lateral a la columna."),
+        ("Bird-Dog (Perro de caza)", "3 × 12 repcs", 45, "Gran ejercicio biomecánico para la salud espinal."),
+        ("Vacío Abdominal (Vacuum)", "4 × 30 seg", 30, "Reduce la circunferencia de la cintura (transverso).")
     ]
 }
 
-# --- LÓGICA DE NAVEGACIÓN ---
-dias_entreno = list(rutinas.keys())
-es_descanso = dia_actual not in dias_entreno
+# --- LÓGICA DE OVERDRIVE / SELECCIÓN DE SESIÓN ---
+if "overdrive" not in st.session_state: 
+    st.session_state.overdrive = False
 
-if "overdrive" not in st.session_state: st.session_state.overdrive = False
+# Verificar si el día actual de forma nativa es de descanso (Miércoles o Sábado)
+es_descanso_nativo = dia_actual in ["Miércoles", "Sábado"]
 
-if es_descanso and not st.session_state.overdrive:
-    st.info(f"🛌 Hoy {dia_actual} es descanso. Recupera el cuerpo.")
-    if st.button("🔥 ACTIVAR MODO OVERDRIVE"):
+if es_descanso_nativo and not st.session_state.overdrive:
+    st.info(f"🛌 Protocolo de Recuperación: Hoy {dia_actual} es descanso absoluto. Permite que el sistema nervioso se adapte.")
+    if st.button("⚡ FORCE OVERDRIVE MODE"):
         st.session_state.overdrive = True
         st.rerun()
 else:
-    if st.session_state.overdrive:
-        st.warning("⚡ MODO OVERDRIVE ACTIVADO")
-        seleccion = st.selectbox("Elige qué sesión hacer:", dias_entreno)
-        ejercicios = rutinas[seleccion]
-        if st.button("❌ Salir del Overdrive"):
+    # Selector de días visible si estás en Overdrive o si quieres revisar otra sesión
+    if st.session_state.overdrive or es_descanso_nativo:
+        st.warning("⚡ MODO OVERDRIVE ACTIVADO (Entrenamiento fuera de agenda)")
+        seleccion_dia = st.selectbox("Selecciona el protocolo a ejecutar:", list(rutinas.keys()), index=list(rutinas.keys()).index(dia_actual))
+        if st.button("❌ Volver a agenda normal"):
             st.session_state.overdrive = False
             st.rerun()
     else:
-        ejercicios = rutinas.get(dia_actual, [])
+        # Por defecto muestra el día de la semana en el que estás, con opción de cambiarlo abajo
+        seleccion_dia = st.selectbox("Protocolo activo:", list(rutinas.keys()), index=list(rutinas.keys()).index(dia_actual))
 
-    # --- LISTA DE EJERCICIOS ---
-    st.subheader("Entrenamiento del Día")
-    
-    for nombre, reps, desc, musculo in ejercicios:
-        with st.expander(f"🏋️ {nombre} ({reps})"):
-            st.write(f"🎯 **Enfoque:** {musculo}")
-            st.write(f"⏱️ **Descanso:** {desc} segundos")
-            
-            # Botón único para terminar serie y descansar
-            if st.button(f"✅ FINALIZAR SERIE", key=f"btn_{nombre}"):
-                msg = st.empty()
-                bar = st.progress(0)
-                # Sonido o aviso visual de inicio
-                for s in range(desc, -1, -1):
-                    msg.subheader(f"⏳ DESCANSO: {s}s")
-                    bar.progress((desc - s) / desc)
-                    time.sleep(1)
+    ejercicios = rutinas.get(seleccion_dia, [])
+
+    if not ejercicios:
+        st.info("Formato de descanso seleccionado. No hay ejercicios agendados.")
+    else:
+        st.subheader(f"📋 Ejercicios – Enfoque de {seleccion_dia}")
+        
+        # Iterar sobre los ejercicios optimizados
+        for nombre, reps, desc, enfoque in ejercicios:
+            with st.expander(f"🏋️ {nombre} ➔ {reps}"):
+                st.markdown(f"🎯 **Enfoque Técnico:** {enfoque}")
+                st.markdown(f"⏱️ **Tiempo de Descanso:** {desc} segundos")
                 
-                msg.success("💪 ¡DALE A LA SIGUIENTE SERIE!")
-                st.balloons()
-                time.sleep(2)
-                st.rerun()
+                # Sistema de temporizador integrado por ejercicio
+                if st.button(f"✅ CONCLUIR SERIE", key=f"btn_{nombre.replace(' ', '_')}"):
+                    msg = st.empty()
+                    bar = st.progress(0)
+                    
+                    for s in range(desc, -1, -1):
+                        msg.subheader(f"⏳ Descansando: {s}s")
+                        bar.progress((desc - s) / desc)
+                        time.sleep(1)
+                    
+                    msg.success("💪 ¡Tiempo cumplido! Inicia la siguiente serie.")
+                    st.balloons()
+                    time.sleep(1)
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.header("⚙️ Gestión")
-    if st.button("🔴 REINICIAR RACHA"):
-        st.session_state.datos_usuario["fecha_inicio_racha"] = str(date.today())
-        guardar_datos(st.session_state.datos_usuario)
-        st.success("Racha reiniciada")
-        st.rerun()
-    
-    st.divider()
-    st.caption("TOJI MODE PRO - Sin excusas.")
+    st.header("👓 Configuración")
+    st.caption("Clark Kent Protocol v2.0")
+    st.write("Diseñado específicamente para optimizar palancas largas y control postural.")
