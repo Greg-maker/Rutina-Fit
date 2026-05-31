@@ -2,6 +2,7 @@ import streamlit as st
 from datetime import datetime
 import time
 import pytz
+import os
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(page_title="CLARK KENT MODE", page_icon="👓", layout="centered")
@@ -40,21 +41,23 @@ dia_actual = dias_es.get(hoy_tj.strftime("%A"), "Lunes")
 if "historial_pesos" not in st.session_state:
     st.session_state.historial_pesos = {}
 
-# --- GENERADOR AUTOMÁTICO DE VIDEOS DESDE GITHUB ---
-def obtener_url_video(nombre_ejercicio):
+# --- LOCALIZADOR DE ARCHIVOS DE VIDEO LOCALES ---
+def obtener_ruta_local_video(nombre_ejercicio):
     """
-    Formatea el nombre del ejercicio idénticamente para buscarlo en tu repositorio de GitHub.
-    Reemplaza los nombres de tu usuario, repositorio y carpeta según corresponda.
+    Limpia el nombre del ejercicio para buscar el archivo .mp4 localmente.
+    Reemplaza espacios por guiones bajos y elimina caracteres especiales.
     """
-    # Limpieza estándar: minúsculas, quitar paréntesis y cambiar espacios por guiones bajos
     nombre_limpio = nombre_ejercicio.lower().replace(" ", "_").replace("(", "").replace(")", "").replace("/", "_")
-    # Quitar acentos comunes de forma manual para evitar fallos de URL
     for a, b in [("á", "a"), ("é", "e"), ("í", "i"), ("ó", "o"), ("ú", "u")]:
         nombre_limpio = nombre_limpio.replace(a, b)
-        
-    # Cambia 'TU_USUARIO', 'TU_REPOSITORIO' y 'videos' por los datos reales de tu GitHub
-    url_base_github = "https://raw.githubusercontent.com/TU_USUARIO/TU_REPOSITORIO/main/videos/"
-    return f"{url_base_github}{nombre_limpio}.mp4"
+    
+    # Intenta buscar primero en una carpeta llamada 'videos/' y si no, en la raíz
+    ruta_carpeta = os.path.join("videos", f"{nombre_limpio}.mp4")
+    ruta_raiz = f"{nombre_limpio}.mp4"
+    
+    if os.path.exists(ruta_carpeta):
+        return ruta_carpeta
+    return ruta_raiz
 
 # --- HEADER ---
 st.title("👓 CLARK KENT MODE: PROTOCOL 🦸‍♂️")
@@ -66,7 +69,7 @@ with c_r1:
 with c_r2:
     st.markdown(f"<p style='text-align: right; color: #94a3b8;'>{hoy_tj.strftime('%d / %m / %Y')}</p>", unsafe_allow_html=True)
 
-# --- BASE DE DATOS DE RUTINAS OPTIMIZADAS ---
+# --- BASE DE DATOS DE RUTINAS ---
 rutinas = {
     "Lunes": [
         ("Press de Banca Plano (Barra Recta)", "3 × 6 a 8", 120, "Máxima tensión mecánica en el pecho."),
@@ -118,7 +121,7 @@ if es_descanso_nativo and not st.session_state.overdrive:
 else:
     if st.session_state.overdrive or es_descanso_nativo:
         st.warning("⚡ MODO OVERDRIVE ACTIVADO")
-        seleccion_dia = st.selectbox("Selecciona el protocolo a ejecutar:", list(rutinas.keys()), index=list(rutinas.keys()).index(dia_actual))
+        seleccion_dia = st.selectbox("Selecciona el protocolo:", list(rutinas.keys()), index=list(rutinas.keys()).index(dia_actual))
         if st.button("❌ Volver a agenda normal"):
             st.session_state.overdrive = False
             st.rerun()
@@ -128,63 +131,67 @@ else:
     ejercicios = rutinas.get(seleccion_dia, [])
 
     if not ejercicios:
-        st.info("Formato de descanso seleccionado. No hay ejercicios agendados.")
+        st.info("Formato de descanso seleccionado.")
     else:
-        st.subheader(f"📋 Ejercicios – Enfoque de {seleccion_dia}")
+        st.subheader(f"📋 Ejercicios – {seleccion_dia}")
         
         for nombre, reps, desc, enfoque in ejercicios:
-            key_base = f"{seleccion_dia}_{nombre.replace(' ', '_')}"
+            id_unico = f"ej_{seleccion_dia}_{nombre.replace(' ', '_')}".lower()
             
             with st.expander(f"🏋️ {nombre} ➔ {reps}"):
+                
+                # 1. ENTRADA DE PESO RECORDATORIO
+                peso_previo = st.session_state.historial_pesos.get(id_unico, 0.0)
+                peso_nuevo = st.number_input(
+                    "Registrar Peso Máximo (lb/kg):", 
+                    min_value=0.0, 
+                    value=float(peso_previo), 
+                    step=2.5, 
+                    key=f"input_{id_unico}"
+                )
+                st.session_state.historial_pesos[id_unico] = peso_nuevo
+                
                 st.markdown(f"🎯 **Enfoque Técnico:** {enfoque}")
                 st.markdown(f"⏱️ **Tiempo de Descanso:** {desc} segundos")
                 
-                # --- FUNCIÓN DE CARGAS (RECUERDA EL PESO) ---
-                peso_anterior = st.session_state.historial_pesos.get(key_base, 0.0)
-                peso_actual = st.number_input(
-                    f"Registrar Peso Máximo (lb/kg):", 
-                    min_value=0.0, 
-                    value=float(peso_anterior), 
-                    step=2.5, 
-                    key=f"input_{key_base}"
-                )
-                st.session_state.historial_pesos[key_base] = peso_actual
+                # 2. REPRODUCTOR DE VIDEO LOCAL (.mp4)
+                ruta_video = obtener_ruta_local_video(nombre)
                 
-                # --- CARGA DE VIDEOS DESDE GITHUB (IDÉNTICO) ---
-                url_video = obtener_url_video(nombre)
-                try:
-                    st.video(url_video)
-                except:
-                    st.caption("⚠️ *Error al conectar con el archivo de video en GitHub.*")
+                if os.path.exists(ruta_video):
+                    with open(ruta_video, 'rb') as video_file:
+                        video_bytes = video_file.read()
+                    st.video(video_bytes)
+                else:
+                    st.caption(f"ℹ️ Archivo local esperado: `{ruta_video}` (No encontrado)")
                 
-                st.write("") 
+                st.write("---")
                 
-                # --- TEMPORIZADOR ---
-                if st.button(f"✅ CONCLUIR SERIE", key=f"btn_{key_base}"):
+                # 3. TEMPORIZADOR DE DESCANSO
+                if st.button(f"✅ CONCLUIR SERIE", key=f"btn_{id_unico}"):
                     msg = st.empty()
                     bar = st.progress(0)
-                    
                     for s in range(desc, -1, -1):
                         msg.subheader(f"⏳ Descansando: {s}s")
                         bar.progress((desc - s) / desc)
                         time.sleep(1)
-                    
-                    msg.success("💪 ¡Tiempo cumplido! Inicia la siguiente serie.")
+                    msg.success("💪 ¡Tiempo cumplido!")
                     st.balloons()
                     time.sleep(1)
 
-# --- SIDEBAR: RESUMEN DE CARGAS MÁXIMAS ---
+# --- SIDEBAR: CUADERNO DE CARGAS ---
 with st.sidebar:
     st.header("👓 Cuaderno de Cargas")
-    st.write("Pesos usados en esta sesión:")
+    st.write("Pesos guardados:")
     
-    if st.session_state.historial_pesos:
-        for ej, peso in st.session_state.historial_pesos.items():
-            if peso > 0:
-                nombre_limpio = ej.split("_", 1)[1].replace("_", " ")
-                st.markdown(f"• **{nombre_limpio}**: {peso}")
-    else:
+    hay_pesos = False
+    for ej_key, peso in st.session_state.historial_pesos.items():
+        if peso > 0:
+            hay_pesos = True
+            nombre_mostrar = ej_key.replace("ej_", "").split("_", 1)[1].replace("_", " ").title()
+            st.markdown(f"• **{nombre_mostrar}**: {peso}")
+            
+    if not hay_pesos:
         st.caption("Aún no has registrado pesos hoy.")
         
     st.divider()
-    st.caption("Clark Kent Protocol v2.6")
+    st.caption("Clark Kent Protocol v2.8")
