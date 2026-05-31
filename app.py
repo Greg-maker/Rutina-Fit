@@ -36,9 +36,25 @@ dias_es = {
 }
 dia_actual = dias_es.get(hoy_tj.strftime("%A"), "Lunes")
 
-# --- HISTORIAL DE PESOS EN SESSION STATE (PERSISTENCIA TEMPORAL) ---
+# --- PERSISTENCIA TEMPORAL: RECORDAR PESOS ---
 if "historial_pesos" not in st.session_state:
     st.session_state.historial_pesos = {}
+
+# --- GENERADOR AUTOMÁTICO DE VIDEOS DESDE GITHUB ---
+def obtener_url_video(nombre_ejercicio):
+    """
+    Formatea el nombre del ejercicio idénticamente para buscarlo en tu repositorio de GitHub.
+    Reemplaza los nombres de tu usuario, repositorio y carpeta según corresponda.
+    """
+    # Limpieza estándar: minúsculas, quitar paréntesis y cambiar espacios por guiones bajos
+    nombre_limpio = nombre_ejercicio.lower().replace(" ", "_").replace("(", "").replace(")", "").replace("/", "_")
+    # Quitar acentos comunes de forma manual para evitar fallos de URL
+    for a, b in [("á", "a"), ("é", "e"), ("í", "i"), ("ó", "o"), ("ú", "u")]:
+        nombre_limpio = nombre_limpio.replace(a, b)
+        
+    # Cambia 'TU_USUARIO', 'TU_REPOSITORIO' y 'videos' por los datos reales de tu GitHub
+    url_base_github = "https://raw.githubusercontent.com/TU_USUARIO/TU_REPOSITORIO/main/videos/"
+    return f"{url_base_github}{nombre_limpio}.mp4"
 
 # --- HEADER ---
 st.title("👓 CLARK KENT MODE: PROTOCOL 🦸‍♂️")
@@ -50,42 +66,41 @@ with c_r1:
 with c_r2:
     st.markdown(f"<p style='text-align: right; color: #94a3b8;'>{hoy_tj.strftime('%d / %m / %Y')}</p>", unsafe_allow_html=True)
 
-# --- BASE DE DATOS DE RUTINAS CON VIDEOS DE EJEMPLO ---
-# Nota: Deja el url en "" si no tienes video, o pon el link de YouTube entre las comillas.
+# --- BASE DE DATOS DE RUTINAS OPTIMIZADAS ---
 rutinas = {
     "Lunes": [
-        ("Press de Banca Plano (Barra Recta)", "3 × 6 a 8", 120, "Máxima tensión mecánica en el pecho.", "https://www.youtube.com/watch?v=tuwHzz99Z_A"),
-        ("Press Inclinado (Mancuernas)", "3 × 8 a 10", 90, "Estímulo a la porción superior (clavicular).", ""),
-        ("Press Militar Sentado (Barra Recta)", "3 × 8 a 10", 90, "Masa general en el hombro y trapecio.", ""),
-        ("Elevaciones Laterales (Mancuernas)", "4 × 12 a 15", 60, "Ensanchar la silueta de lado a lado.", "")
+        ("Press de Banca Plano (Barra Recta)", "3 × 6 a 8", 120, "Máxima tensión mecánica en el pecho."),
+        ("Press Inclinado (Mancuernas)", "3 × 8 a 10", 90, "Estímulo a la porción superior (clavicular)."),
+        ("Press Militar Sentado (Barra Recta)", "3 × 8 a 10", 90, "Masa general en el hombro y trapecio."),
+        ("Elevaciones Laterales (Mancuernas)", "4 × 12 a 15", 60, "Ensanchar la silueta de lado a lado.")
     ],
     "Martes": [
-        ("Remo Inclinado (Barra Recta)", "4 × 8 a 10", 90, "Trabaja romboides y trapecio medio.", ""),
-        ("Remo a una mano (Mancuerna)", "3 × 10 (por lado)", 90, "Mayor rango de estiramiento para tus brazos largos.", ""),
-        ("Rompecráneos (Barra Z en banco)", "3 × 10 a 12", 60, "Estimula la cabeza larga (gruesa) del tríceps.", ""),
-        ("Curl de Bíceps (Barra Z / Agarre normal)", "3 × 10 a 12", 60, "Hipertrofia directa en la cabeza del bíceps.", "")
+        ("Remo Inclinado (Barra Recta)", "4 × 8 a 10", 90, "Trabaja romboides y trapecio medio."),
+        ("Remo a una mano (Mancuerna)", "3 × 10 (por lado)", 90, "Mayor rango de estiramiento para tus brazos largos."),
+        ("Rompecráneos (Barra Z en banco)", "3 × 10 a 12", 60, "Estimula la cabeza larga (gruesa) del tríceps."),
+        ("Curl de Bíceps (Barra Z / Agarre normal)", "3 × 10 a 12", 60, "Hipertrofia directa en la cabeza del bíceps.")
     ],
     "Miércoles": [], 
     "Jueves": [
-        ("Press Militar de pie (Mancuernas)", "3 × 10", 90, "Fuerza postural y estabilidad del core a tus 1.97 m.", ""),
-        ("Flexiones en banco (Manos elevadas)", "3 × Al fallo", 60, "Estímulo de pecho bajo y bombeo de tríceps.", ""),
-        ("Elevaciones Laterales (Mancuernas)", "4 × 12 a 15", 45, "Volumen metabólico en el deltoides lateral.", ""),
-        ("Curl Martillo (Mancuernas)", "3 × 10 a 12", 60, "Desarrolla el braquial (ensancha el brazo de lado).", ""),
-        ("Copa de Tríceps (Una mancuerna pesada)", "3 × 12", 60, "Estiramiento profundo bajo carga para el tríceps.", "")
+        ("Press Militar de pie (Mancuernas)", "3 × 10", 90, "Fuerza postural y estabilidad del core a tus 1.97 m."),
+        ("Flexiones en banco (Manos elevadas)", "3 × Al fallo", 60, "Estímulo de pecho bajo y bombeo de tríceps."),
+        ("Elevaciones Laterales (Mancuernas)", "4 × 12 a 15", 45, "Volumen metabólico en el deltoides lateral."),
+        ("Curl Martillo (Mancuernas)", "3 × 10 a 12", 60, "Desarrolla el braquial (ensancha el brazo de lado)."),
+        ("Copa de Tríceps (Una mancuerna pesada)", "3 × 12", 60, "Estiramiento profundo bajo carga para el tríceps.")
     ],
     "Viernes": [
-        ("Prensa de Piernas (La de tu banco)", "4 × 12 a 15", 120, "Estímulo seguro a los cuádriceps.", ""),
-        ("Peso Muerto Rumano (Barra Recta)", "3 × 10 a 12", 90, "Fortalece femorales, glúteos y protege la zona lumbar.", ""),
-        ("Elevación de talones (Pantorrillas de pie)", "4 × 15 a 20", 45, "Rompe la elasticidad del tendón.", ""),
-        ("Elevación de Piernas (Acostado en banco)", "4 × 15 a 20", 60, "Hipertrofia del abdomen bajo.", ""),
-        ("Crunch Abdominal (En el suelo)", "3 × 15 a 20", 60, "Relieve e hipertrofia en los cuadritos superiores.", "")
+        ("Prensa de Piernas (La de tu banco)", "4 × 12 a 15", 120, "Estímulo seguro a los cuádriceps."),
+        ("Peso Muerto Rumano (Barra Recta)", "3 × 10 a 12", 90, "Fortalece femorales, glúteos y protege la zona lumbar."),
+        ("Elevación de talones (Pantorrillas de pie)", "4 × 15 a 20", 45, "Rompe la elasticidad del tendón (aguanta 1s arriba/abajo)."),
+        ("Elevación de Piernas (Acostado en banco)", "4 × 15 a 20", 60, "Hipertrofia del abdomen bajo (la 'V' del abdomen)."),
+        ("Crunch Abdominal (En el suelo)", "3 × 15 a 20", 60, "Relieve e hipertrofia en los cuadritos superiores.")
     ],
     "Sábado": [], 
     "Domingo": [
-        ("Plancha Abdominal (Plank tradicional)", "3 × 45-60 seg", 45, "Fortalece el core global en isometría.", ""),
-        ("Plancha Lateral (Side Plank)", "3 × 30 seg (por lado)", 30, "Activa oblicuos y da soporte lateral.", ""),
-        ("Bird-Dog (Perro de caza)", "3 × 12 repcs", 45, "Gran ejercicio biomecánico para la salud espinal.", ""),
-        ("Vacío Abdominal (Vacuum)", "4 × 30 seg", 30, "Reduce la circunferencia de la cintura.", "")
+        ("Plancha Abdominal (Plank tradicional)", "3 × 45-60 seg", 45, "Fortalece el core global en isometría."),
+        ("Plancha Lateral (Side Plank)", "3 × 30 seg (por lado)", 30, "Activa oblicuos y da soporte lateral a la columna."),
+        ("Bird-Dog (Perro de caza)", "3 × 12 repcs", 45, "Gran ejercicio biomecánico para la salud espinal."),
+        ("Vacío Abdominal (Vacuum)", "4 × 30 seg", 30, "Reduce la circunferencia de la cintura (transverso).")
     ]
 }
 
@@ -117,19 +132,15 @@ else:
     else:
         st.subheader(f"📋 Ejercicios – Enfoque de {seleccion_dia}")
         
-        # Iterar sobre los ejercicios
-        for nombre, reps, desc, enfoque, video_url in ejercicios:
-            # Generar una clave única limpia para cada ejercicio
+        for nombre, reps, desc, enfoque in ejercicios:
             key_base = f"{seleccion_dia}_{nombre.replace(' ', '_')}"
             
             with st.expander(f"🏋️ {nombre} ➔ {reps}"):
                 st.markdown(f"🎯 **Enfoque Técnico:** {enfoque}")
                 st.markdown(f"⏱️ **Tiempo de Descanso:** {desc} segundos")
                 
-                # --- NUEVA FUNCIÓN: REGISTRO DE CARGAS ---
-                # Recuperar el último peso guardado para este ejercicio si existe
+                # --- FUNCIÓN DE CARGAS (RECUERDA EL PESO) ---
                 peso_anterior = st.session_state.historial_pesos.get(key_base, 0.0)
-                
                 peso_actual = st.number_input(
                     f"Registrar Peso Máximo (lb/kg):", 
                     min_value=0.0, 
@@ -137,21 +148,16 @@ else:
                     step=2.5, 
                     key=f"input_{key_base}"
                 )
-                
-                # Guardar en la sesión de forma inmediata al cambiar el número
                 st.session_state.historial_pesos[key_base] = peso_actual
                 
-                # Mostrar recordatorio de carga
-                if peso_actual > 0:
-                    st.caption(f"💾 Carga guardada para hoy: **{peso_actual}**")
+                # --- CARGA DE VIDEOS DESDE GITHUB (IDÉNTICO) ---
+                url_video = obtener_url_video(nombre)
+                try:
+                    st.video(url_video)
+                except:
+                    st.caption("⚠️ *Error al conectar con el archivo de video en GitHub.*")
                 
-                # --- SECCIÓN DE VIDEO DE EJEMPLO ---
-                if video_url:
-                    st.video(video_url)
-                else:
-                    st.caption("ℹ️ *No hay video asignado a este ejercicio aún.*")
-                
-                st.write("") # Espaciado
+                st.write("") 
                 
                 # --- TEMPORIZADOR ---
                 if st.button(f"✅ CONCLUIR SERIE", key=f"btn_{key_base}"):
@@ -170,16 +176,15 @@ else:
 # --- SIDEBAR: RESUMEN DE CARGAS MÁXIMAS ---
 with st.sidebar:
     st.header("👓 Cuaderno de Cargas")
-    st.write("Tus pesos guardados en esta sesión:")
+    st.write("Pesos usados en esta sesión:")
     
     if st.session_state.historial_pesos:
         for ej, peso in st.session_state.historial_pesos.items():
             if peso > 0:
-                # Limpiar el nombre para mostrarlo estético en el sidebar
                 nombre_limpio = ej.split("_", 1)[1].replace("_", " ")
                 st.markdown(f"• **{nombre_limpio}**: {peso}")
     else:
         st.caption("Aún no has registrado pesos hoy.")
         
     st.divider()
-    st.caption("Clark Kent Protocol v2.5")
+    st.caption("Clark Kent Protocol v2.6")
