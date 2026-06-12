@@ -43,15 +43,10 @@ if "historial_pesos" not in st.session_state:
 
 # --- LOCALIZADOR DE ARCHIVOS DE VIDEO LOCALES ---
 def obtener_ruta_local_video(nombre_ejercicio):
-    """
-    Limpia el nombre del ejercicio para buscar el archivo .mp4 localmente.
-    Reemplaza espacios por guiones bajos y elimina caracteres especiales.
-    """
     nombre_limpio = nombre_ejercicio.lower().replace(" ", "_").replace("(", "").replace(")", "").replace("/", "_")
     for a, b in [("á", "a"), ("é", "e"), ("í", "i"), ("ó", "o"), ("ú", "u")]:
         nombre_limpio = nombre_limpio.replace(a, b)
     
-    # Intenta buscar primero en una carpeta llamada 'videos/' y si no, en la raíz
     ruta_carpeta = os.path.join("videos", f"{nombre_limpio}.mp4")
     ruta_raiz = f"{nombre_limpio}.mp4"
     
@@ -59,15 +54,18 @@ def obtener_ruta_local_video(nombre_ejercicio):
         return ruta_carpeta
     return ruta_raiz
 
-# --- HEADER ---
-st.title("👓 CLARK KENT MODE: PROTOCOL 🦸‍♂️")
-st.write("---")
-
-c_r1, c_r2 = st.columns(2)
-with c_r1:
-    st.subheader(f"📅 Hoy es {dia_actual}")
-with c_r2:
-    st.markdown(f"<p style='text-align: right; color: #94a3b8;'>{hoy_tj.strftime('%d / %m / %Y')}</p>", unsafe_allow_html=True)
+# --- FUNCIÓN REUTILIZABLE PARA TEMPORIZADOR ---
+def ejecutar_temporizador(segundos, key_btn):
+    if st.button(f"✅ CONCLUIR SERIE", key=key_btn):
+        msg = st.empty()
+        bar = st.progress(0)
+        for s in range(segundos, -1, -1):
+            msg.subheader(f"⏳ Descansando: {s}s")
+            bar.progress((segundos - s) / segundos)
+            time.sleep(1)
+        msg.success("💪 ¡Tiempo cumplido!")
+        st.balloons()
+        time.sleep(1)
 
 # --- BASE DE DATOS DE RUTINAS ---
 rutinas = {
@@ -107,80 +105,15 @@ rutinas = {
     ]
 }
 
-# --- LÓGICA DE OVERDRIVE / SELECCIÓN DE SESIÓN ---
-if "overdrive" not in st.session_state: 
-    st.session_state.overdrive = False
-
-es_descanso_nativo = dia_actual in ["Miércoles", "Sábado"]
-
-if es_descanso_nativo and not st.session_state.overdrive:
-    st.info(f"🛌 Protocolo de Recuperación: Hoy {dia_actual} es descanso absoluto.")
-    if st.button("⚡ FORCE OVERDRIVE MODE"):
-        st.session_state.overdrive = True
-        st.rerun()
-else:
-    if st.session_state.overdrive or es_descanso_nativo:
-        st.warning("⚡ MODO OVERDRIVE ACTIVADO")
-        seleccion_dia = st.selectbox("Selecciona el protocolo:", list(rutinas.keys()), index=list(rutinas.keys()).index(dia_actual))
-        if st.button("❌ Volver a agenda normal"):
-            st.session_state.overdrive = False
-            st.rerun()
-    else:
-        seleccion_dia = st.selectbox("Protocolo activo:", list(rutinas.keys()), index=list(rutinas.keys()).index(dia_actual))
-
-    ejercicios = rutinas.get(seleccion_dia, [])
-
-    if not ejercicios:
-        st.info("Formato de descanso seleccionado.")
-    else:
-        st.subheader(f"📋 Ejercicios – {seleccion_dia}")
-        
-        for nombre, reps, desc, enfoque in ejercicios:
-            id_unico = f"ej_{seleccion_dia}_{nombre.replace(' ', '_')}".lower()
-            
-            with st.expander(f"🏋️ {nombre} ➔ {reps}"):
-                
-                # 1. ENTRADA DE PESO RECORDATORIO
-                peso_previo = st.session_state.historial_pesos.get(id_unico, 0.0)
-                peso_nuevo = st.number_input(
-                    "Registrar Peso Máximo (lb/kg):", 
-                    min_value=0.0, 
-                    value=float(peso_previo), 
-                    step=2.5, 
-                    key=f"input_{id_unico}"
-                )
-                st.session_state.historial_pesos[id_unico] = peso_nuevo
-                
-                st.markdown(f"🎯 **Enfoque Técnico:** {enfoque}")
-                st.markdown(f"⏱️ **Tiempo de Descanso:** {desc} segundos")
-                
-                # 2. REPRODUCTOR DE VIDEO LOCAL (.mp4)
-                ruta_video = obtener_ruta_local_video(nombre)
-                
-                if os.path.exists(ruta_video):
-                    with open(ruta_video, 'rb') as video_file:
-                        video_bytes = video_file.read()
-                    st.video(video_bytes)
-                else:
-                    st.caption(f"ℹ️ Archivo local esperado: `{ruta_video}` (No encontrado)")
-                
-                st.write("---")
-                
-                # 3. TEMPORIZADOR DE DESCANSO
-                if st.button(f"✅ CONCLUIR SERIE", key=f"btn_{id_unico}"):
-                    msg = st.empty()
-                    bar = st.progress(0)
-                    for s in range(desc, -1, -1):
-                        msg.subheader(f"⏳ Descansando: {s}s")
-                        bar.progress((desc - s) / desc)
-                        time.sleep(1)
-                    msg.success("💪 ¡Tiempo cumplido!")
-                    st.balloons()
-                    time.sleep(1)
-
-# --- SIDEBAR: CUADERNO DE CARGAS ---
+# --- SIDEBAR: CUADERNO DE CARGAS Y CONTROLES ---
 with st.sidebar:
     st.header("👓 Cuaderno de Cargas")
+    
+    # NUEVO INTERRUPTOR DE RUTINA FIJA DE AGARRE
+    st.subheader("🔥 Protocolos Especiales")
+    modo_grip = st.toggle("🟢 RUTINA VASCULAR GRIP", value=False, help="Activa de forma fija la rutina de Hand Grip e hipertrofia de antebrazo.")
+    
+    st.divider()
     st.write("Pesos guardados:")
     
     hay_pesos = False
@@ -194,4 +127,155 @@ with st.sidebar:
         st.caption("Aún no has registrado pesos hoy.")
         
     st.divider()
-    st.caption("Clark Kent Protocol v2.8")
+    st.caption("Clark Kent Protocol v2.9")
+
+# --- HEADER PRINCIPAL ---
+st.title("👓 CLARK KENT MODE: PROTOCOL 🦸‍♂️")
+st.write("---")
+
+c_r1, c_r2 = st.columns(2)
+with c_r1:
+    st.subheader(f"📅 Hoy es {dia_actual}")
+with c_r2:
+    st.markdown(f"<p style='text-align: right; color: #94a3b8;'>{hoy_tj.strftime('%d / %m / %Y')}</p>", unsafe_allow_html=True)
+
+
+# ==========================================
+# LÓGICA 1: MODO VASCULAR GRIP ACTIVADO
+# ==========================================
+if modo_grip:
+    st.warning("💪 MODO VASCULAR GRIP FIJO – Enfoque: Antebrazos de Acero y Agarre Aplastante")
+    
+    # FASE 1: Calentamiento
+    st.subheader("🟢 FASE 1: El Calentamiento (Obligatorio)")
+    st.info("Haz esto para lubricar las articulaciones, llevar sangre al músculo y evitar lesiones.")
+    
+    with st.expander("👋 1. Rotación de muñecas (30 seg)"):
+        st.write("Entrelaza los dedos de ambas manos y haz giros suaves hacia la derecha y hacia la izquierda.")
+        ejecutar_temporizador(30, "cal_1")
+        
+    with st.expander("👐 2. Abrir y cerrar al aire (1 min)"):
+        st.write("Estira los brazos al frente y abre y cierra las manos lo más rápido posible (abriendo bien los dedos) de forma continua.")
+        ejecutar_temporizador(60, "cal_2")
+        
+    with st.expander("⚙️ 3. Serie de aproximación (15 repes x lado)"):
+        st.write("Pon tu hand grip en la resistencia más baja y haz 15 repeticiones fluidas con cada mano.")
+        ejecutar_temporizador(45, "cal_3")
+
+    # FASE 2: Rutina Principal
+    st.subheader("🔥 FASE 2: La Rutina 'Vascular Grip'")
+    st.caption("🚨 **Nota sobre el descanso:** Haz la mano derecha, luego la izquierda sin parar, y ahí cuentas el tiempo de descanso antes de la siguiente serie.")
+    
+    # Ejercicio 1
+    with st.expander("⚡ Ejercicio 1: Compresión Lenta (Fuerza y Grosor) ➔ 3 × 10 a 12"):
+        st.markdown("**Cómo se hace:** Sujeta el hand grip normalmente. Ciérralo lentamente hasta que peguen las dos manijas. Mantén la presión al máximo durante 3 segundos y luego abre la mano despacio, controlando la bajada.")
+        st.markdown("🎯 **Volumen:** 3 series de 10 a 12 repeticiones por mano.")
+        
+        peso_previo = st.session_state.historial_pesos.get("ej_grip_compresion_lenta", 0.0)
+        peso_nuevo = st.number_input("Registrar Resistencia/Peso:", min_value=0.0, value=float(peso_previo), step=1.0, key="input_grip_1")
+        st.session_state.historial_pesos["ej_grip_compresion_lenta"] = peso_nuevo
+        
+        st.markdown("⏱️ **Tiempo de Descanso:** 60 a 90 segundos")
+        ejecutar_temporizador(75, "btn_grip_1")
+
+    # Ejercicio 2
+    with st.expander("⚡ Ejercicio 2: Compresión Rápida (El Quemador / Bombeo) ➔ 3 × 30 seg"):
+        st.markdown("**Cómo se hace:** Baja un poco la resistencia. Cierra y abre la mano lo más rápido que puedas de forma fluida. No te detengas aunque el ritmo baje en los últimos segundos por el cansancio.")
+        st.markdown("🎯 **Volumen:** 3 series de 30 segundos continuos por mano.")
+        
+        peso_previo = st.session_state.historial_pesos.get("ej_grip_compresion_rapida", 0.0)
+        peso_nuevo = st.number_input("Registrar Resistencia/Peso:", min_value=0.0, value=float(peso_previo), step=1.0, key="input_grip_2")
+        st.session_state.historial_pesos["ej_grip_compresion_rapida"] = peso_nuevo
+        
+        st.markdown("⏱️ **Tiempo de Descanso:** ¡Solo 15 segundos! (Para acumular el máximo bombeo)")
+        ejecutar_temporizador(15, "btn_grip_2")
+
+    # Ejercicio 3
+    with st.expander("⚡ Ejercicio 3: Sostenimiento Estático (Isometría / Venas a tope) ➔ 3 × Al Fallo"):
+        st.markdown("**Cómo se hace:** Cierra el hand grip por completo con todas tus fuerzas y mantenlo cerrado, apretando duro sin soltar el agarre hasta que los dedos se te abran solos por el cansancio.")
+        st.markdown("🎯 **Volumen:** 3 series por mano (buscando aguantar entre 20 y 30 segundos por serie).")
+        
+        peso_previo = st.session_state.historial_pesos.get("ej_grip_sostenimiento_estatico", 0.0)
+        peso_nuevo = st.number_input("Registrar Resistencia/Peso:", min_value=0.0, value=float(peso_previo), step=1.0, key="input_grip_3")
+        st.session_state.historial_pesos["ej_grip_sostenimiento_estatico"] = peso_nuevo
+        
+        st.markdown("⏱️ **Tiempo de Descanso:** 60 segundos")
+        ejecutar_temporizador(60, "btn_grip_3")
+
+    # Ejercicio 4
+    with st.expander("⚡ Ejercicio 4: Agarre de Pinza (Fuerza de Dedos y Rocosidad) ➔ 3 × Al Fallo"):
+        st.markdown("**Cómo se hace:** Sujeta el hand grip usando solo las yemas de tus dedos (el pulgar en un mango y los otros cuatro dedos en el otro, sin que el aparato toque la palma de tu mano). Ciérralo y mantén la presión.")
+        st.markdown("🎯 **Volumen:** 3 series al fallo por mano.")
+        
+        peso_previo = st.session_state.historial_pesos.get("ej_grip_agarre_pinza", 0.0)
+        peso_nuevo = st.number_input("Registrar Resistencia/Peso:", min_value=0.0, value=float(peso_previo), step=1.0, key="input_grip_4")
+        st.session_state.historial_pesos["ej_grip_agarre_pinza"] = peso_nuevo
+        
+        st.markdown("⏱️ **Tiempo de Descanso:** 45 a 60 segundos")
+        ejecutar_temporizador(50, "btn_grip_4")
+
+
+# ==========================================
+# LÓGICA 2: MODO AGENDA NORMAL (CÓDIGO ORIGINAL)
+# ==========================================
+else:
+    if "overdrive" not in st.session_state: 
+        st.session_state.overdrive = False
+
+    es_descanso_nativo = dia_actual in ["Miércoles", "Sábado"]
+
+    if es_descanso_nativo and not st.session_state.overdrive:
+        st.info(f"🛌 Protocolo de Recuperación: Hoy {dia_actual} es descanso absoluto.")
+        if st.button("⚡ FORCE OVERDRIVE MODE"):
+            st.session_state.overdrive = True
+            st.rerun()
+    else:
+        if st.session_state.overdrive or es_descanso_nativo:
+            st.warning("⚡ MODO OVERDRIVE ACTIVADO")
+            seleccion_dia = st.selectbox("Selecciona el protocolo:", list(rutinas.keys()), index=list(rutinas.keys()).index(dia_actual))
+            if st.button("❌ Volver a agenda normal"):
+                st.session_state.overdrive = False
+                st.rerun()
+        else:
+            seleccion_dia = st.selectbox("Protocolo activo:", list(rutinas.keys()), index=list(rutinas.keys()).index(dia_actual))
+
+        ejercicios = rutinas.get(seleccion_dia, [])
+
+        if not ejercicios:
+            st.info("Formato de descanso seleccionado.")
+        else:
+            st.subheader(f"📋 Ejercicios – {seleccion_dia}")
+            
+            for nombre, reps, desc, enfoque in ejercicios:
+                id_unico = f"ej_{seleccion_dia}_{nombre.replace(' ', '_')}".lower()
+                
+                with st.expander(f"🏋️ {nombre} ➔ {reps}"):
+                    
+                    # 1. ENTRADA DE PESO RECORDATORIO
+                    peso_previo = st.session_state.historial_pesos.get(id_unico, 0.0)
+                    peso_nuevo = st.number_input(
+                        "Registrar Peso Máximo (lb/kg):", 
+                        min_value=0.0, 
+                        value=float(peso_previo), 
+                        step=2.5, 
+                        key=f"input_{id_unico}"
+                    )
+                    st.session_state.historial_pesos[id_unico] = peso_nuevo
+                    
+                    st.markdown(f"🎯 **Enfoque Técnico:** {enfoque}")
+                    st.markdown(f"⏱️ **Tiempo de Descanso:** {desc} segundos")
+                    
+                    # 2. REPRODUCTOR DE VIDEO LOCAL (.mp4)
+                    ruta_video = obtener_ruta_local_video(nombre)
+                    
+                    if os.path.exists(ruta_video):
+                        with open(ruta_video, 'rb') as video_file:
+                            video_bytes = video_file.read()
+                        st.video(video_bytes)
+                    else:
+                        st.caption(f"ℹ️ Archivo local esperado: `{ruta_video}` (No encontrado)")
+                    
+                    st.write("---")
+                    
+                    # 3. TEMPORIZADOR DE DESCANSO
+                    ejecutar_temporizador(desc, f"btn_{id_unico}")
